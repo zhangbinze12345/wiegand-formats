@@ -1,0 +1,259 @@
+{
+  "meta": {
+    "version": "0.1.0",
+    "updated": "2026-11-10",
+    "about": "Access-control credential bit layouts, keyed by format ID rather than bit count. A bit count does not identify a layout: 32-bit alone has at least five mutually incompatible splits, 37-bit at least four, 36-bit at least four. Anything not listed here as 'implemented: true' is published for reference only and this package will not encode or decode it.",
+    "confidence": {
+      "high": "Two or more independent public sources agree, and the layout has been exercised against a real frame.",
+      "medium": "A single third-party source, or sources that disagree on a detail. Treat as reference, not spec.",
+      "low": "Field widths known, bit positions not published. Do not build hardware around it."
+    }
+  },
+  "formats": [
+    {
+      "id": "hid-h10301",
+      "name": "HID H10301",
+      "aliases": ["26-bit", "W26", "HID 26-bit", "standard 26-bit"],
+      "bits": 26,
+      "fields": [
+        { "name": "fc", "role": "facility", "bits": 8 },
+        { "name": "cn", "role": "card", "bits": 16 }
+      ],
+      "parity": { "even": [2, 13], "odd": [14, 25] },
+      "ranges": { "fc": [0, 255], "cn": [0, 65535] },
+      "confidence": "high",
+      "implemented": true,
+      "note": "The de facto open standard. Parity intervals are 1-based bit numbers and exclude the parity bits themselves.",
+      "sources": ["probsee: Wiegand interface", "tagtixrfid", "emblemaccess: HID card numbers and facility codes", "Maxxess AN-012 (bit map)"]
+    },
+    {
+      "id": "hid-h10306",
+      "name": "HID H10306 / Honeywell N10002",
+      "aliases": ["34-bit", "W34"],
+      "bits": 34,
+      "fields": [
+        { "name": "fc", "role": "facility", "bits": 16 },
+        { "name": "cn", "role": "card", "bits": 16 }
+      ],
+      "parity": { "even": [2, 17], "odd": [18, 33] },
+      "ranges": { "fc": [0, 65535], "cn": [0, 65535] },
+      "confidence": "high",
+      "implemented": true,
+      "note": "Both vendors use 16 facility + 16 card. This is NOT the only 34-bit layout - see awid-rs2-34.",
+      "sources": ["probsee: Wiegand interface", "promptzero/pacs (Go) implementation", "Maxxess AN-012 (bit map)"]
+    },
+    {
+      "id": "awid-rs2-34",
+      "name": "AWID RS2 34-bit",
+      "aliases": ["AWID 34-bit", "RS2"],
+      "bits": 34,
+      "fields": [
+        { "name": "site", "role": "facility", "bits": 8 },
+        { "name": "cn", "role": "card", "bits": 24 }
+      ],
+      "parity": null,
+      "ranges": { "site": [0, 255], "cn": [0, 16777215] },
+      "confidence": "high",
+      "implemented": false,
+      "note": "Same bit count as H10306, different split. Feeding an RS2 card to a generic H10306 decoder yields a plausible but wrong facility code and card number. Parity bit positions were not published in the sources reviewed, so this package does not attempt it.",
+      "sources": ["accessgrid: AWID RS2 34bit - 8-bit site code, 24-bit card number"]
+    },
+    {
+      "id": "keyscan-c15001",
+      "name": "Keyscan C15001",
+      "aliases": ["36-bit", "Keyscan 36-bit"],
+      "bits": 36,
+      "fields": [
+        { "name": "oem", "role": "format", "bits": 10 },
+        { "name": "fc", "role": "facility", "bits": 8 },
+        { "name": "cn", "role": "card", "bits": 16 }
+      ],
+      "parity": { "even": [2, 18], "odd": [19, 35] },
+      "ranges": { "fc": [0, 255], "cn": [0, 65535], "oem": [0, 1023] },
+      "confidence": "medium",
+      "implemented": true,
+      "note": "Keyscan has never published C15001 bit positions. The bit map above is reconstructed from third-party sources, and third-party decoders have historically mislabelled C15001 reads (proxmark3 issue #1773). The 10-bit OEM field is the only field that lets a human sanity-check which layout was actually read - do not drop it.",
+      "sources": ["authoriz-id: Keyscan C1325 and C15001 36-bit guide", "accessgrid: examples of every access control bit format", "Flipper Zero wiegand_reader docs"]
+    },
+    {
+      "id": "simplex-s12906",
+      "name": "Simplex S12906",
+      "aliases": ["36-bit Simplex"],
+      "bits": 36,
+      "fields": null,
+      "parity": null,
+      "ranges": {},
+      "confidence": "low",
+      "implemented": false,
+      "note": "Publicly documented as a different 36-bit layout from C15001, but field positions were not available in the sources reviewed.",
+      "sources": ["authoriz-id: 36-bit compatibility guide"]
+    },
+    {
+      "id": "awid-36",
+      "name": "AWID 36-bit",
+      "aliases": ["36-bit AWID"],
+      "bits": 36,
+      "fields": null,
+      "parity": null,
+      "ranges": {},
+      "confidence": "low",
+      "implemented": false,
+      "note": "Uses AWID's own modulation: standard HID-style readers cannot read it at all. Do not assume a 36-bit frame is C15001 just because the length matches.",
+      "sources": ["accessgrid", "authoriz-id: 36-bit compatibility guide"]
+    },
+    {
+      "id": "hid-h10302",
+      "name": "HID H10302",
+      "aliases": ["37-bit", "W37"],
+      "bits": 37,
+      "fields": [{ "name": "cn", "role": "card", "bits": 35 }],
+      "parity": { "even": [2, 18], "odd": [19, 36], "disputed": true },
+      "ranges": { "cn": [0, 34359738367] },
+      "confidence": "high",
+      "implemented": false,
+      "note": "No facility code at all - 35 bits of card number. Field layout is well attested; the parity boundary is not: Nedap and promptzero/pacs overlap the two 18-bit regions at bit 18, Suprema starts the odd region at bit 18. 35 data bits cannot be split evenly, which is where the disagreement comes from. Verify against a real frame before trusting either reading.",
+      "sources": ["probsee: Wiegand interface", "securityidsystems H10302 product page", "emblemaccess", "Nedap Invexs manual 3.3.6", "Suprema BioStar: understanding Wiegand", "pkg.go.dev promptzero/pacs"]
+    },
+    {
+      "id": "hid-h10304",
+      "name": "HID H10304",
+      "aliases": ["37-bit with facility code"],
+      "bits": 37,
+      "fields": [
+        { "name": "fc", "role": "facility", "bits": 16 },
+        { "name": "cn", "role": "card", "bits": 19 }
+      ],
+      "parity": { "even": [2, 18], "odd": [19, 36], "disputed": true },
+      "ranges": { "fc": [0, 65535], "cn": [0, 524287] },
+      "confidence": "high",
+      "implemented": false,
+      "note": "Same 37 bits as H10302, same vendor, completely different field split. A 37-bit frame alone cannot tell you which one it is - the user has to say. Same parity boundary dispute as H10302.",
+      "sources": ["tagtixrfid: H10301 vs H10302 vs H10304", "secureitcontrols H10304 product page", "Suprema BioStar: understanding Wiegand"]
+    },
+    {
+      "id": "hid-generic-37",
+      "name": "HID generic 37-bit",
+      "aliases": ["37-bit generic"],
+      "bits": 37,
+      "fields": [{ "name": "cn", "role": "card", "bits": 32 }],
+      "parity": { "even": [1, 2], "odd": [37, 37] },
+      "ranges": { "cn": [0, 4294967295] },
+      "confidence": "medium",
+      "implemented": false,
+      "note": "Layout reported as two leading parity bits + 32-bit card number + one trailing parity bit. Field order comes from a single source group.",
+      "sources": ["accessgrid"]
+    },
+    {
+      "id": "pointguard-mdi-37",
+      "name": "PointGuard MDI 37-bit",
+      "aliases": ["MDI 37-bit"],
+      "bits": 37,
+      "fields": [
+        { "name": "site", "role": "facility", "bits": 4 },
+        { "name": "cn", "role": "card", "bits": 29 }
+      ],
+      "parity": null,
+      "ranges": { "site": [0, 15] },
+      "confidence": "medium",
+      "implemented": false,
+      "note": "A 4-bit site code, so generic 37-bit decoders produce a facility code that is wrong by orders of magnitude.",
+      "sources": ["accessgrid"]
+    },
+    {
+      "id": "ats-32",
+      "name": "ATS 32-bit",
+      "aliases": ["32-bit ATS"],
+      "bits": 32,
+      "fields": [
+        { "name": "site", "role": "facility", "bits": 13 },
+        { "name": "cn", "role": "card", "bits": 17 }
+      ],
+      "parity": { "count": 2 },
+      "ranges": { "site": [0, 8191] },
+      "confidence": "medium",
+      "implemented": false,
+      "note": "One of at least five 32-bit layouts. Included so that nobody mistakes '32-bit' for a format.",
+      "sources": ["accessgrid"]
+    },
+    {
+      "id": "wie32-generic",
+      "name": "Generic WIE32",
+      "aliases": ["32-bit no parity"],
+      "bits": 32,
+      "fields": [
+        { "name": "site", "role": "facility", "bits": 12 },
+        { "name": "cn", "role": "card", "bits": 16 }
+      ],
+      "parity": null,
+      "ranges": {},
+      "confidence": "medium",
+      "implemented": false,
+      "note": "No parity bits at all - so a corrupted frame cannot be detected.",
+      "sources": ["accessgrid", "Nedap Invexs manual 3.3.4"]
+    },
+    {
+      "id": "kantech-k32",
+      "name": "Kantech K32",
+      "aliases": ["32-bit Kantech"],
+      "bits": 32,
+      "fields": [
+        { "name": "site", "role": "facility", "bits": 8 },
+        { "name": "cn", "role": "card", "bits": 16 }
+      ],
+      "parity": null,
+      "ranges": {},
+      "confidence": "medium",
+      "implemented": false,
+      "note": "8 site + 16 card leaves 8 bits unaccounted for in the reviewed source.",
+      "sources": ["accessgrid"]
+    },
+    {
+      "id": "nedap-32",
+      "name": "Nedap 32-bit",
+      "aliases": ["32-bit Nedap"],
+      "bits": 32,
+      "fields": [
+        { "name": "site", "role": "facility", "bits": 16 },
+        { "name": "cn", "role": "card", "bits": 16 }
+      ],
+      "parity": null,
+      "ranges": {},
+      "confidence": "medium",
+      "implemented": false,
+      "note": "16 + 16 with no parity bits - the same split as H10306 but half the length, which is exactly the trap this dataset exists to document.",
+      "sources": ["Nedap Invexs manual 3.3.4"]
+    },
+    {
+      "id": "maxxess-32",
+      "name": "Maxxess 32-bit",
+      "aliases": ["32-bit Maxxess"],
+      "bits": 32,
+      "fields": [
+        { "name": "site", "role": "facility", "bits": 14 },
+        { "name": "badge", "role": "card", "bits": 16 }
+      ],
+      "parity": null,
+      "ranges": {},
+      "confidence": "medium",
+      "implemented": false,
+      "note": "14 site + 16 badge, per the vendor's own application note.",
+      "sources": ["Maxxess AN-012"]
+    },
+    {
+      "id": "hid-corporate-1000",
+      "name": "HID Corporate 1000",
+      "aliases": ["35-bit", "Corporate 1000 35-bit"],
+      "bits": 35,
+      "fields": [
+        { "name": "company", "role": "facility", "bits": 12 },
+        { "name": "cn", "role": "card", "bits": 20 }
+      ],
+      "parity": { "count": 3, "interleaved": true },
+      "ranges": { "company": [0, 4095], "cn": [0, 1048575] },
+      "confidence": "medium",
+      "implemented": false,
+      "note": "Proprietary. Three parity bits whose coverage is interleaved (for example 4-5, 7-8, 10-11) rather than contiguous, so the simple 'continuous range' model used by most calculators cannot express it. The company code is assigned by HID to licensed buyers and is not publicly derivable.",
+      "sources": ["probsee: Wiegand interface", "emblemaccess"]
+    }
+  ]
+}

@@ -1,0 +1,37 @@
+{
+  "name": "wiegand-formats",
+  "version": "0.1.0",
+  "description": "Access-control credential bit layouts, keyed by format ID rather than bit count: 26/34/36-bit Wiegand plus the layouts that share those lengths.",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.mjs",
+    "./data": "./data/formats.json"
+  },
+  "files": [
+    "src",
+    "data",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "test": "node --test"
+  },
+  "keywords": [
+    "wiegand",
+    "access-control",
+    "rfid",
+    "prox",
+    "hid",
+    "h10301",
+    "h10302",
+    "h10304",
+    "h10306",
+    "keyscan",
+    "facility-code",
+    "card-number"
+  ],
+  "license": "MIT",
+  "engines": {
+    "node": ">=20.10"
+  }
+}
